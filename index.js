@@ -6,10 +6,17 @@ const config = require('./config')
 const app = experss()
 
 const PORT = process.env.PORT || '5000'
-const sender = 'sample@mail.com'
-const receiver = 'youraddress@gmail.com'
+
+const defaultMail = {
+  from: 'sample@com',
+  to: 'youraddress@com',
+  subject: 'Hi, it\'s me',
+  text: 'this is message'
+}
 
 const sendWithSMTP = (req, res) => {
+  const mail = req.body || defaultMail
+
   // if 2-factor auth is available on the account you need oauth2
   const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
@@ -17,13 +24,6 @@ const sendWithSMTP = (req, res) => {
     secure: true,
     auth: config
   })
-
-  const mail = {
-    from: sender,
-    to: receiver,
-    subject: 'Hi, it\'s me',
-    text: 'this is message'
-  }
 
   transporter.sendMail(mail, (err) => {
     if (err) {
@@ -36,12 +36,9 @@ const sendWithSMTP = (req, res) => {
 }
 
 const sendWithoutSMTP = (req, res) => {
-  sendmail({
-    from: sender,
-    to: receiver,
-    subject: 'title',
-    text: 'hello world'
-  }, (err) => {
+  const mail = req.body || defaultMail
+
+  sendmail(mail, (err) => {
     if (err) {
       console.log(err)
       res.status(400).send('error')
@@ -50,8 +47,9 @@ const sendWithoutSMTP = (req, res) => {
   })
 }
 
+app.use(experss.json())
 app.get('/', (req, res) => res.send('hello world'))
-app.get('/with-smtp', sendWithSMTP)
-app.get('/without-smtp', sendWithoutSMTP)
+app.post('/with-smtp', sendWithSMTP)
+app.post('/without-smtp', sendWithoutSMTP)
 
 app.listen(PORT, () => console.log(`running on ${PORT}`))
